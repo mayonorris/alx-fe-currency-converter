@@ -10,21 +10,76 @@ import {
 } from "recharts";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import Card from "./Card";
-import { generateHistoricalData, calculateRateStats } from "../utils/chartData";
+import { calculateRateStats } from "../utils/chartData";
+import { fetchHistoricalRates } from "../services/historicalApi";
 
 function ExchangeRateChart({ fromCurrency, toCurrency, currentRate }) {
   const [chartData, setChartData] = useState([]);
   const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!currentRate) return;
 
-    const data = generateHistoricalData(currentRate, 12);
-    setChartData(data);
-    setStats(calculateRateStats(data));
+    async function loadHistoricalData() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await fetchHistoricalRates(fromCurrency, toCurrency, 12);
+        setChartData(data);
+        setStats(calculateRateStats(data));
+      } catch (err) {
+        console.error("Failed to load historical data:", err);
+        setError("Unable to load historical data");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadHistoricalData();
   }, [currentRate, fromCurrency, toCurrency]);
 
-  if (!currentRate || !stats) {
+  if (loading) {
+    return (
+      <Card>
+        <h3
+          className="text-lg font-bold mb-4"
+          style={{ fontFamily: "Syne, sans-serif" }}
+        >
+          Exchange Rate Evolution
+        </h3>
+        <p className="text-center py-8" style={{ color: "var(--text-muted)" }}>
+          Loading historical data...
+        </p>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <h3
+          className="text-lg font-bold mb-4"
+          style={{ fontFamily: "Syne, sans-serif" }}
+        >
+          Exchange Rate Evolution
+        </h3>
+        <div
+          className="rounded-xl p-5 text-center"
+          style={{
+            background: "rgba(239,68,68,0.1)",
+            border: "1px solid var(--red)",
+          }}
+        >
+          <p style={{ color: "var(--red)" }}>{error}</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!currentRate || !stats || chartData.length === 0) {
     return (
       <Card>
         <h3
@@ -54,7 +109,7 @@ function ExchangeRateChart({ fromCurrency, toCurrency, currentRate }) {
             Exchange Rate Evolution
           </h3>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {fromCurrency} to {toCurrency} • Feb 2025 - Feb 2026
+            {fromCurrency} to {toCurrency} • Last 12 months
           </p>
         </div>
         <div
@@ -135,21 +190,19 @@ function ExchangeRateChart({ fromCurrency, toCurrency, currentRate }) {
         </ResponsiveContainer>
       </div>
 
-      {/* Disclaimer */}
+      {/* Real Data Badge */}
       <div
-        className="mt-4 p-3 rounded-lg text-xs"
+        className="mt-4 p-3 rounded-lg text-xs flex items-center gap-2"
         style={{
-          background: "rgba(99,102,241,0.05)",
-          border: "1px solid rgba(99,102,241,0.2)",
+          background: "rgba(16,185,129,0.1)",
+          border: "1px solid var(--green)",
         }}
       >
-        <span style={{ color: "var(--accent)", fontWeight: "bold" }}>
-          Note:
-        </span>{" "}
+        <span style={{ color: "var(--green)", fontWeight: "bold" }}>
+          ✓ Real Data
+        </span>
         <span style={{ color: "var(--text-muted)" }}>
-          This chart shows simulated historical exchange rate data for
-          demonstration purposes. In a production environment, this would
-          display real historical data from a currency API.
+          Historical exchange rates provided by Frankfurter API
         </span>
       </div>
     </Card>
