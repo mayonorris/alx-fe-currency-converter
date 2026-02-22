@@ -101,9 +101,9 @@ currency-converter/
 
 ## Deployment
 
-> _The application will be deployed on Netlify or Vercel._
+> _The application is deployed on Netlify._
 
-> _(Deployment link will be added once available.)_
+> _**URL**: https://mayo-currency-converter.netlify.app_
 
 ## Future Improvements
 
