@@ -6,18 +6,18 @@ import ConverterCard from "./components/ConverterCard";
 import FavoritePairs from "./components/FavoritePairs";
 import RecentConversions from "./components/RecentConversions";
 import ExchangeRateChart from "./components/ExchangeRateChart";
+import RateVariations from "./components/RateVariations";
 import {
   getFavorites,
   getRecentConversions,
   removeFavorite,
   clearRecentConversions,
 } from "./utils/storage";
+import { updateLastVisit } from "./utils/rateVariations";
 
 function App() {
   const [favorites, setFavorites] = useState([]);
   const [recentConversions, setRecentConversions] = useState([]);
-
-  // Shared state for chart
   const [currentPair, setCurrentPair] = useState({
     from: "USD",
     to: "EUR",
@@ -49,6 +49,8 @@ function App() {
 
   const handleRateUpdate = (from, to, rate) => {
     setCurrentPair({ from, to, rate });
+    // Update last visit data
+    updateLastVisit(rate);
   };
 
   useEffect(() => {
@@ -86,11 +88,11 @@ function App() {
               toCurrency={currentPair.to}
               currentRate={currentPair.rate}
             />
-            <Card>
-              <p style={{ color: "var(--text-muted)" }}>
-                ➡ Rate variations go here (Step 7)
-              </p>
-            </Card>
+            <RateVariations
+              fromCurrency={currentPair.from}
+              toCurrency={currentPair.to}
+              currentRate={currentPair.rate}
+            />
           </>
         }
       />
