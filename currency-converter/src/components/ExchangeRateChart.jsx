@@ -8,16 +8,20 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { TrendingDown, TrendingUp, AlertCircle } from "lucide-react";
 import Card from "./Card";
 import { calculateRateStats } from "../utils/chartData";
-import { fetchHistoricalRates } from "../services/historicalApi";
+import {
+  fetchHistoricalRates,
+  isCurrencySupportedByFrankfurter,
+} from "../services/historicalApi";
 
 function ExchangeRateChart({ fromCurrency, toCurrency, currentRate }) {
   const [chartData, setChartData] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [dataSource, setDataSource] = useState("real"); // 'real' or 'estimated'
 
   useEffect(() => {
     if (!currentRate) return;
@@ -26,8 +30,25 @@ function ExchangeRateChart({ fromCurrency, toCurrency, currentRate }) {
       setLoading(true);
       setError(null);
 
+      // Check if both currencies are supported by Frankfurter
+      const isSupported =
+        isCurrencySupportedByFrankfurter(fromCurrency) &&
+        isCurrencySupportedByFrankfurter(toCurrency);
+      setDataSource(isSupported ? "real" : "estimated");
+
       try {
-        const data = await fetchHistoricalRates(fromCurrency, toCurrency, 12);
+        let data = await fetchHistoricalRates(fromCurrency, toCurrency, 12);
+
+        // Scale estimated data to match current rate
+        if (!isSupported && data.length > 0) {
+          const lastRate = data[data.length - 1].rate;
+          const scaleFactor = currentRate / lastRate;
+          data = data.map((d) => ({
+            ...d,
+            rate: parseFloat((d.rate * scaleFactor).toFixed(4)),
+          }));
+        }
+
         setChartData(data);
         setStats(calculateRateStats(data));
       } catch (err) {
@@ -190,21 +211,40 @@ function ExchangeRateChart({ fromCurrency, toCurrency, currentRate }) {
         </ResponsiveContainer>
       </div>
 
-      {/* Real Data Badge */}
-      <div
-        className="mt-4 p-3 rounded-lg text-xs flex items-center gap-2"
-        style={{
-          background: "rgba(16,185,129,0.1)",
-          border: "1px solid var(--green)",
-        }}
-      >
-        <span style={{ color: "var(--green)", fontWeight: "bold" }}>
-          ✓ Real Data
-        </span>
-        <span style={{ color: "var(--text-muted)" }}>
-          Historical exchange rates provided by Frankfurter API
-        </span>
-      </div>
+      {/* Data Source Badge */}
+      {dataSource === "real" ? (
+        <div
+          className="mt-4 p-3 rounded-lg text-xs flex items-center gap-2"
+          style={{
+            background: "rgba(16,185,129,0.1)",
+            border: "1px solid var(--green)",
+          }}
+        >
+          <span style={{ color: "var(--green)", fontWeight: "bold" }}>
+            ✓ Real Data
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>
+            Historical exchange rates from Frankfurter API (ECB data)
+          </span>
+        </div>
+      ) : (
+        <div
+          className="mt-4 p-3 rounded-lg text-xs flex items-center gap-2"
+          style={{
+            background: "rgba(249,115,22,0.1)",
+            border: "1px solid #f97316",
+          }}
+        >
+          <AlertCircle size={14} style={{ color: "#f97316" }} />
+          <span style={{ color: "#f97316", fontWeight: "bold" }}>
+            Estimated Trend
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>
+            This currency pair is not available in ECB data. Chart shows
+            estimated historical trend.
+          </span>
+        </div>
+      )}
     </Card>
   );
 }

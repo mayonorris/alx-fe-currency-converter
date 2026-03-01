@@ -182,11 +182,21 @@ function RateVariations({ fromCurrency, toCurrency, currentRate }) {
           <div
             className="rounded-xl p-4 text-center"
             style={{
-              background: "rgba(239,68,68,0.1)",
-              border: "1px solid var(--red)",
+              background: "rgba(249,115,22,0.1)",
+              border: "1px solid #f97316",
             }}
           >
-            <p style={{ color: "var(--red)" }}>{error}</p>
+            <AlertCircle
+              size={16}
+              style={{
+                color: "#f97316",
+                display: "inline",
+                marginRight: "8px",
+              }}
+            />
+            <span style={{ color: "#f97316" }}>
+              Historical data unavailable for this currency pair
+            </span>
           </div>
         )}
 
