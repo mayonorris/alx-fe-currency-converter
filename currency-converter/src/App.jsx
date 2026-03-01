@@ -49,8 +49,8 @@ function App() {
 
   const handleRateUpdate = (from, to, rate) => {
     setCurrentPair({ from, to, rate });
-    // Update last visit data
-    updateLastVisit(rate);
+    // Update last visit data for the selected specific currency pair
+    updateLastVisit(from, to, rate);
   };
 
   useEffect(() => {
